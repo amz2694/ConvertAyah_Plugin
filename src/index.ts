@@ -3,36 +3,51 @@ import { ToolbarButtonLocation } from 'api/types';
 
 joplin.plugins.register({
 	onStart: async function() {
-		async function insert() {
+		let output = '';
+		async function insert(surah:number,aye:number) {
+			// Get installation directory
+			const installDir = await joplin.plugins.installationDir();
+
+			// File System 
+			const fs = joplin.require('fs-extra');
+
+			// Read surah
+			const fileContent = await fs.readFile(installDir + '/../quran/quran-simple.txt', 'utf8');
+
+			// Find aye			
+			const craye = `${surah}|${aye}|`
+			const nxaye = `${surah}|${aye+1}|`
+			const length = String(aye).length + String(surah).length + 2;
+			output += fileContent.substring( fileContent.indexOf(craye) + length, fileContent.indexOf(nxaye));
+		}
+		async function readinfo() {
 			// Get the selected Text.
 			const note = (await joplin.commands.execute('selectedText') as string);
 			if (note) {
 				// Surah list
-				const surahs = ['فاتحه','بقره'];
+				const surahs = ['قرآن','فاتحه','بقره']
 
 				// Get Surah's name
 				const surah = note.split(":")[0];
-
-				// Get aye
-				const ayeIndex = parseInt(note.split(":")[1]);
-
+				
 				// Get index of surah
 				const surahIndex = surahs.indexOf(surah);
 
-				// Get installation directory
-				const installDir = await joplin.plugins.installationDir();
-
-				// File System 
-				const fs = joplin.require('fs-extra');
-
-				// Read surah
-				const fileContent = await fs.readFile(installDir + `/../quran/${surahIndex}.txt`, 'utf8');
-
-				// Find aye
-				const aye = fileContent.substring( fileContent.indexOf(ayeIndex-1) + 1, fileContent.lastIndexOf(ayeIndex));
+				if (note.indexOf('-') !== -1) {
+					const fromaye = parseInt(note.substring(note.indexOf(':')+1 , note.indexOf('-')));
+					const toaye = parseInt(note.split("-")[1]);
+					let i=fromaye;
+					for (i; i<=toaye; i++) {
+						await insert(surahIndex,i);
+					}
+				} else {
+					const ayeIndex = parseInt(note.split(":")[1]);
+					await insert(surahIndex,ayeIndex);
+				}
 
 				// replace selected text
-				await joplin.commands.execute('replaceSelection', aye);
+				await joplin.commands.execute('replaceSelection', output);
+				output = '';
 			} else {
 				// No text selected
 				console.info('No note is selected');
@@ -45,7 +60,7 @@ joplin.plugins.register({
 				label: 'My Test Command 1',
 				iconName: 'fas fa-music',
 				execute: async () => {
-					insert();
+					readinfo();
 				},
 			});
 
