@@ -1,72 +1,69 @@
 import joplin from 'api';
-import { ToolbarButtonLocation } from 'api/types';
+import { MenuItemLocation } from 'api/types';
 
 joplin.plugins.register({
 	onStart: async function() {
 		let output = '';
 		async function insert(surah:number,aye:number) {
-			// Get installation directory
+
 			const installDir = await joplin.plugins.installationDir();
 
-			// File System 
 			const fs = joplin.require('fs-extra');
 
-			// Read surah
 			const fileContent = await fs.readFile(installDir + '/../quran/quran-simple.txt', 'utf8');
-
-			// Find aye			
+		
 			const craye = `${surah}|${aye}|`
 			const nxaye = `${surah}|${aye+1}|`
 			const length = String(aye).length + String(surah).length + 2;
 			output += fileContent.substring( fileContent.indexOf(craye) + length, fileContent.indexOf(nxaye));
 		}
+		async function getinfo(note) {
+			const surahs = ['قرآن','فاتحه','بقره'];
+			const surah = note.split(":")[0];
+				
+			const surahIndex = surahs.indexOf(surah);
+
+			if (note.indexOf('-') !== -1) {
+				const fromaye = parseInt(note.substring(note.indexOf(':')+1 , note.indexOf('-')));
+				const toaye = parseInt(note.split("-")[1]);
+				let i=fromaye;
+				for (i; i<=toaye; i++) {
+					await insert(surahIndex,i);
+				}
+			} else {
+				const ayeIndex = parseInt(note.split(":")[1]);
+				await insert(surahIndex,ayeIndex);
+			}
+
+		}
 		async function readinfo() {
-			// Get the selected Text.
+			const noteBody = await joplin.workspace.selectedNote();
 			const note = (await joplin.commands.execute('selectedText') as string);
 			if (note) {
-				// Surah list
-				const surahs = ['قرآن','فاتحه','بقره']
-
-				// Get Surah's name
-				const surah = note.split(":")[0];
-				
-				// Get index of surah
-				const surahIndex = surahs.indexOf(surah);
-
-				if (note.indexOf('-') !== -1) {
-					const fromaye = parseInt(note.substring(note.indexOf(':')+1 , note.indexOf('-')));
-					const toaye = parseInt(note.split("-")[1]);
-					let i=fromaye;
-					for (i; i<=toaye; i++) {
-						await insert(surahIndex,i);
-					}
-				} else {
-					const ayeIndex = parseInt(note.split(":")[1]);
-					await insert(surahIndex,ayeIndex);
-				}
-
-				// replace selected text
+				await getinfo (note);
 				await joplin.commands.execute('replaceSelection', output);
 				output = '';
-			} else {
-				// No text selected
-				console.info('No note is selected');
+				
+			}else
+			if(noteBody) {
+				const lines = noteBody.body.split("\n");
+				const notee = lines[lines.length -1];
+				await getinfo (notee);
+				await joplin.commands.execute('editor.deleteLine', notee);
+				await joplin.commands.execute('insertText', output);
+				output = '';
+			}else {
+				console.info("bad usege");
 			}
-		}
-
-		// Custom commend for our icon
+	}
 			await joplin.commands.register({
-				name: 'testCommand1',
-				label: 'My Test Command 1',
-				iconName: 'fas fa-music',
+				name: 'convert',
+				label: 'insert aye',
 				execute: async () => {
 					readinfo();
 				},
 			});
 
-			// Add icon to toolbar
-			await joplin.views.toolbarButtons.create('myButton', 'testCommand1', ToolbarButtonLocation.EditorToolbar);
+			await joplin.views.menuItems.create('Quran', 'convert', MenuItemLocation.Edit,{ accelerator: 'CmdOrCtrl+Shift+Q' });
 	},
-	
 });
-
