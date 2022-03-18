@@ -1,24 +1,13 @@
-# Joplin Plugin
+# Joplin Convert Ayah Plugin
 
-This is a template to create a new Joplin plugin.
+## How to use
 
-The main two files you will want to look at are:
+![gif example](convert.gif)
 
-- `/src/index.ts`, which contains the entry point for the plugin source code.
-- `/src/manifest.json`, which is the plugin manifest. It contains information such as the plugin a name, version, etc.
+You can get a certain ayah by entering a sura's name and ayah's number with a colon in-between.
+Example => فاتحه:2
 
-## Building the plugin
+You can also get a range of ayah by using a hyphen between two ayah numbers.
+Example => بقره:2-5
 
-The plugin is built using Webpack, which creates the compiled code in `/dist`. A JPL archive will also be created at the root, which can use to distribute the plugin.
-
-To build the plugin, simply run `npm run dist`.
-
-The project is setup to use TypeScript, although you can change the configuration to use plain JavaScript.
-
-## Updating the plugin framework
-
-To update the plugin framework, run `npm run update`.
-
-In general this command tries to do the right thing - in particular it's going to merge the changes in package.json and .gitignore instead of overwriting. It will also leave "/src" as well as README.md untouched.
-
-The file that may cause problem is "webpack.config.js" because it's going to be overwritten. For that reason, if you want to change it, consider creating a separate JavaScript file and include it in webpack.config.js. That way, when you update, you only have to restore the line that include your file.
+After selecting a line in the text, you can hold `Ctrl+Shift+Q` to get the corresponding ayah. If no line is selected, the last line will be converted. Any combination of keys can be set as a shortcut in the "options" menu.
